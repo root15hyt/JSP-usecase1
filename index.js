@@ -1,8 +1,19 @@
 console.log("index.js: loaded");
 
 // エラーハンドリングのためにエントリーポイントを設ける。
+// fetchUserInfo関数から返されたPromiseオブジェクトを、main関数でエラーハンドリングしてログを出力する。
 function main() {
     fetchUserInfo("js-primer-example")
+        // ここではJSONオブジェクトで解決されるPromise
+        .then((userInfo) => createView(userInfo))
+        // ここではHTML文字列で解決されるPromise
+        .then((view) => displayView(view))
+        // Promiseチェーンでエラーがあった場合はキャッチされる
+        // HTTP通信でのエラーはNetworkErrorオブジェクトでrejectされたPromiseが返される。errorをcatchする。 
+        .catch((error) => {
+            // Promiseチェーンの中で発生したエラーを受け取る。
+            console.error(`エラーが発生しました (${error})`);
+        });
 }
 
 
@@ -11,29 +22,20 @@ function fetchUserInfo(userId) {
     // 指定したGitHubユーザーIDの情報を取得するURLに対してfetchメソッドで、GETのHTTPリクエストを行う。
     // fetchメソッドはPromiseを返す。Promiseインスタンスはリクエストのレスポンスを表すResponseオブジェクトでresolveされる。
     // 送信したリクエストにレスポンスが返却されると、thenコールバックが呼び出される。
-    fetch(`https://api.github.com/users/${encodeURIComponent(userId)}`)
+    return fetch(`https://api.github.com/users/${encodeURIComponent(userId)}`)
         .then(response => {
             // Responseオブジェクトのstatusプロパティからは、HTTPレスポンスのステータスコードが取得できる。 -> 200
             console.log(response.status);
             // エラーレスポンスが返されたことを検知する
             // Responseオブジェクトのokプロパティは、HTTPステータスコードが200番台であればtrueを返し、それ以外ならfalseを返す。
             if (!response.ok) {
-                console.log("エラーレスポンス", response);
+                // エラーレスポンスからRejectedなPromiseを作成して返す
+                return Promise.reject(new Error(`${response.status}:
+                                                ${response.statusText}`));
             } else {
-                return response.json().then(userInfo => {
-                    // JSONパースされたオブジェクトが渡される
-                    // ResponseオブジェクトのjsonメソッドもPromiseを返す。これはHTTPレスポンスボディをJSONとしてパースしたオブジェクトでresolveされる。-> {...}
-                    console.log(userInfo);
-                    // HTMLの組み立て
-                    const view = createView(userInfo);
-                    // HTMLの挿入
-                    displayView(view);
-                });
-            }
-            // HTTP通信でのエラーはNetworkErrorオブジェクトでrejectされたPromiseが返される。errorをcatchする。 
-            }).catch(error => {
-                console.error(error)
-            });
+                return response.json();
+            };
+        });
 }
 
 // HTML文字列を組み立てるcreateView関数
