@@ -2,20 +2,22 @@ console.log("index.js: loaded");
 
 // エラーハンドリングのためにエントリーポイントを設ける。
 // fetchUserInfo関数から返されたPromiseオブジェクトを、main関数でエラーハンドリングしてログを出力する。
-function main() {
-    fetchUserInfo("js-primer-example")
+async function main() {
+    try {
+        // HTMLの入力から受け取ったIDをfetchUserInfoに引き渡す。
+        const userId = getUserId();
+        const userInfo = await fetchUserInfo(userId);
         // ここではJSONオブジェクトで解決されるPromise
-        .then((userInfo) => createView(userInfo))
+        const view = createView(userInfo);
         // ここではHTML文字列で解決されるPromise
-        .then((view) => displayView(view))
-        // Promiseチェーンでエラーがあった場合はキャッチされる
-        // HTTP通信でのエラーはNetworkErrorオブジェクトでrejectされたPromiseが返される。errorをcatchする。 
-        .catch((error) => {
-            // Promiseチェーンの中で発生したエラーを受け取る。
-            console.error(`エラーが発生しました (${error})`);
-        });
+        displayView(view);
+    // Promiseチェーンでエラーがあった場合はキャッチされる
+    // HTTP通信でのエラーはNetworkErrorオブジェクトでrejectされたPromiseが返される。errorをcatchする。 
+    } catch (error) {
+        // Promiseチェーンの中で発生したエラーを受け取る。
+        console.error(`エラーが発生しました (${error})`);
+    }
 }
-
 
 // GitHubからユーザー情報を取得する関数fetchUserInfoを定義する。
 function fetchUserInfo(userId) {
@@ -36,6 +38,12 @@ function fetchUserInfo(userId) {
                 return response.json();
             };
         });
+}
+
+// HTMLのinputタグに入力されたIDをJSに引き渡す関数
+function getUserId() {
+    const value = document.getElementById("userId").value;
+    return encodeURIComponent(value);
 }
 
 // HTML文字列を組み立てるcreateView関数
